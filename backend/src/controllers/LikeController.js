@@ -4,6 +4,8 @@ module.exports = {
 
     async store(request, response) {
 
+        console.log(request.io, request.connectedUsers)
+
         const { user } = request.headers
         const { devId } = request.params
 
@@ -15,7 +17,16 @@ module.exports = {
         }
 
         if (targetDev.likes.includes(loggedDev._id)) {
-            console.log('MATCH BITCH!')
+            const loggedSocket = request.connectedUsers[user]
+            const targetSocket = request.connectedUsers[devId]
+
+            if (loggedSocket) {
+                request.io.to(loggedSocket).emit('match', targetDev)
+            }
+
+            if (targetSocket) {
+                request.io.to(targetSocket).emit('match', loggedDev)
+            }
         }
 
         loggedDev.likes.push(targetDev._id)

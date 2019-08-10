@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import AsyncStorage from '@react-native-community/async-storage'
+import io from 'socket.io-client'
 import { View, SafeAreaView, Image, StyleSheet, Text, TouchableOpacity} from 'react-native'
 
 import api from '../services/api'
@@ -7,11 +8,13 @@ import api from '../services/api'
 import logo from '../assets/logo.png'
 import like from '../assets/like.png'
 import dislike from '../assets/dislike.png'
+import itsamacth from '../assets/itsamatch.png'
 
 export default function Main({ navigation }) {
 
     const id = navigation.getParam('user')
     const [users, setUsers] = useState([])
+    const [matchDev, setMatchDev] = useState(null)
 
     useEffect(() => {   
 
@@ -24,6 +27,19 @@ export default function Main({ navigation }) {
 
         loadUsers()
 
+    }, [id])
+
+    useEffect(() => {
+
+        const socket = io('http://localhost:3333', {
+            query: {user: id}
+        })
+
+        socket.on('match', dev => {
+            setMatchDev(dev)
+        })
+        
+        
     }, [id])
 
     async function handleLike() {
@@ -58,6 +74,18 @@ export default function Main({ navigation }) {
             <TouchableOpacity onPress={handleLogout}>
                 <Image source={logo} style={styles.logo}/>
             </TouchableOpacity>
+
+            { matchDev && (
+                <View style={styles.matchContainer}>
+                    <Image source={itsamacth} style={styles.matchText}/>
+                    <Image style={styles.matchAvatar} source={{ uri: matchDev.avatar }}/>
+                    <Text style={styles.matchName}>{matchDev.name}</Text>
+                    <Text style={styles.matchBio}>{matchDev.bio}</Text>
+                    <TouchableOpacity onPress={() => setMatchDev(null)}>
+                        <Text style={styles.closeMatch}>Close</Text>
+                    </TouchableOpacity>
+                </View>
+            ) }
 
             <View style={styles.cardsContainer}>
                 { users.length === 0 ? <Text style={styles.empty}>Its over :(</Text> : (
@@ -156,6 +184,7 @@ const styles = StyleSheet.create({
     buttonsContainer: {
         flexDirection: 'row',
         marginBottom: 30,
+        zIndex: 1
     },
 
     button: {
@@ -175,5 +204,50 @@ const styles = StyleSheet.create({
             height: 2,
         }
     },
+
+    matchContainer: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 100
+    },
+
+    matchText: {
+        height: 60,
+        resizeMode: 'contain'
+    },
+
+    matchAvatar: {
+        height: 160,
+        width: 160,
+        borderRadius: 80,
+        borderWidth: 5,
+        borderColor: '#fff',
+        marginVertical: 30
+    },
+
+    matchName: {
+        fontSize: 26,
+        fontWeight: 'bold',
+        color: '#fff'
+    },
+
+    matchBio: {
+        marginTop: 10,
+        fontSize: 16,
+        color: 'rgba(255, 255, 255, 0.8)',
+        lineHeight: 24,
+        textAlign: 'center',
+        paddingHorizontal: 30
+    },
+
+    closeMatch: {
+        fontSize: 16,
+        color: 'rgba(255, 255, 255, 0.8)',
+        textAlign: 'center',
+        marginTop: 30,
+        fontWeight: 'bold'
+    }
 
 })
